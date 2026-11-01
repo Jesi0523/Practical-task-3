@@ -14,9 +14,14 @@ import {
   StyleSheet,
   Platform,
   Modal,
+  Switch,
 } from 'react-native';
 
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+  SafeAreaProvider,
+} from 'react-native-safe-area-context';
 
 const COLORS = {
   background: '#EEF1F6',
@@ -61,13 +66,23 @@ function formatCount(n) {
   return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-export default function App() {
+// BONUS
+function ProfileCard() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [isBioExpanded, setIsBioExpanded] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [selectedSkills, setSelectedSkills] = useState([]);
+
+  // BONUS
+  const [searchText, setSearchText] = useState('');
+  const [allowComments, setAllowComments] = useState(false);
+  const insets = useSafeAreaInsets();
+
+  const filteredContacts = CONTACTS.filter((name) =>
+    name.toLowerCase().includes(searchText.trim().toLowerCase()),
+  );
 
   // TODO STEP 1: add the state that says if the modal is visible
   const [modalVisible, setModalVisible] = useState(false);
@@ -111,6 +126,8 @@ export default function App() {
   const closeModal = () => {
     setModalVisible(false);
     setSelectedContacts([]);
+    setSearchText('');
+    setAllowComments(false);
   };
 
   // TODO STEP 4: write handleContactPress and handleConfirmShare
@@ -123,7 +140,12 @@ export default function App() {
   };
 
   const handleConfirmShare = () => {
-    Alert.alert('Profile shared', `Sent to: ${selectedContacts.join(', ')}`);
+    Alert.alert(
+      'Profile shared',
+      `Sent to: ${selectedContacts.join(', ')}\nComments: ${
+        allowComments ? 'Allowed' : 'Disabled'
+      }`,
+    );
     closeModal();
   };
 
@@ -300,6 +322,12 @@ export default function App() {
                 onPress={() => setModalVisible(true)}
               />
             </View>
+
+            {/* BONUS */}
+            <Text style={styles.insetsText}>
+              SafeArea insets: top: {insets.top}, right: {insets.right}, bottom: {insets.bottom},
+              left: {insets.left}.
+            </Text>
           </View>
         </View>
 
@@ -317,8 +345,18 @@ export default function App() {
               <Text style={styles.sheetText}>
                 Choose who gets Alex's profile.
               </Text>
+
+              {/* BONUS */}
+              <TextInput
+                style={[styles.input, styles.searchInput]}
+                placeholder='Search contact'
+                placeholderTextColor={COLORS.muted}
+                value={searchText}
+                onChangeText={(newText) => setSearchText(newText)}
+              />
+
               <ScrollView style={styles.contactList}>
-                {CONTACTS.map((name) => {
+                {filteredContacts.map((name) => {
                   const isSelected = selectedContacts.includes(name);
 
                   return (
@@ -340,6 +378,17 @@ export default function App() {
                   );
                 })}
               </ScrollView>
+
+              {/* BONUS */}
+              <View style={styles.optionRow}>
+                <Text style={styles.contactName}>Allow comments</Text>
+                <Switch
+                  value={allowComments}
+                  onValueChange={() => setAllowComments(!allowComments)}
+                  trackColor={{ false: COLORS.offline, true: COLORS.primary }}
+                />
+              </View>
+
               <Pressable
                 style={({ pressed }) => [
                   styles.shareButton,
@@ -369,8 +418,15 @@ export default function App() {
           </View>
         </Modal>
       </ScrollView>
-
     </SafeAreaView>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <ProfileCard />
+    </SafeAreaProvider>
   );
 }
 
@@ -718,5 +774,21 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  // BONUS
+  searchInput: {
+    marginBottom: 12,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  insetsText: {
+    marginTop: 12,
+    fontSize: 11,
+    color: COLORS.muted,
+    textAlign: 'center',
   },
 });
